@@ -43,13 +43,13 @@ This project extends the previous P2P network (Project 3) to support decentraliz
 
 ### Components
 
-| Component   | File                          | Description                                |
-|-------------|-------------------------------|--------------------------------------------|
-| Bootstrap   | `bootstrap.py`                | Peer registry, metrics collection          |
-| Peer Node   | `node.py`                     | File storage, KV store, DHT routing        |
-| Dashboard   | `dashboard/dashboard_app.py`  | Monitoring UI with D3.js + Chart.js        |
-| Compose Gen | `generate_compose.py`         | Generates docker-compose.yml for N nodes   |
-| Test Suite  | `test_network.py`             | Automated tests for all phases             |
+| Component   | File                         | Description                              |
+| ----------- | ---------------------------- | ---------------------------------------- |
+| Bootstrap   | `bootstrap.py`               | Peer registry, metrics collection        |
+| Peer Node   | `node.py`                    | File storage, KV store, DHT routing      |
+| Dashboard   | `dashboard/dashboard_app.py` | Monitoring UI with D3.js + Chart.js      |
+| Compose Gen | `generate_compose.py`        | Generates docker-compose.yml for N nodes |
+| Test Suite  | `test_network.py`            | Automated tests for all phases           |
 
 ---
 
@@ -91,6 +91,7 @@ python test_network.py 5
 ### Step 5: Open the dashboard (Option 2)
 
 Open **http://localhost:8080** in your browser to see:
+
 - Real-time network graph showing all active peers and connections
 - Message traffic chart updating over time
 - Active peer list with file/KV counts per node
@@ -208,12 +209,6 @@ p2p-project4/
 ---
 
 ## Team Contributions
-
-| Member | Contributions |
-|--------|---------------|
-| [Name 1] | [Describe contributions] |
-| [Name 2] | [Describe contributions] |
-| [Name 3] | [Describe contributions] |
 
 ---
 
