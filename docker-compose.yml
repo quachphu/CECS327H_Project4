@@ -1,0 +1,135 @@
+version: '3.8'
+services:
+  bootstrap:
+    build:
+      context: .
+      dockerfile: bootstrap.Dockerfile
+    container_name: bootstrap
+    ports:
+    - 5000:5000
+    networks:
+    - p2p-net
+    restart: unless-stopped
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard.Dockerfile
+    container_name: dashboard
+    ports:
+    - 8080:8080
+    environment:
+      BOOTSTRAP_URL: http://bootstrap:5000
+      POLL_INTERVAL: '5'
+    networks:
+    - p2p-net
+    depends_on:
+    - bootstrap
+    restart: unless-stopped
+  node-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-1
+    ports:
+    - 5001:5000
+    environment:
+      NODE_ID: node-1
+      NODE_PORT: '5000'
+      BOOTSTRAP_URL: http://bootstrap:5000
+      NODE_HOST: node-1
+      DISCOVERY_INTERVAL: '10'
+      STORAGE_DIR: /app/storage
+    volumes:
+    - ./storage/node-1:/app/storage
+    networks:
+    - p2p-net
+    depends_on:
+    - bootstrap
+    restart: unless-stopped
+  node-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-2
+    ports:
+    - 5002:5000
+    environment:
+      NODE_ID: node-2
+      NODE_PORT: '5000'
+      BOOTSTRAP_URL: http://bootstrap:5000
+      NODE_HOST: node-2
+      DISCOVERY_INTERVAL: '10'
+      STORAGE_DIR: /app/storage
+    volumes:
+    - ./storage/node-2:/app/storage
+    networks:
+    - p2p-net
+    depends_on:
+    - bootstrap
+    restart: unless-stopped
+  node-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-3
+    ports:
+    - 5003:5000
+    environment:
+      NODE_ID: node-3
+      NODE_PORT: '5000'
+      BOOTSTRAP_URL: http://bootstrap:5000
+      NODE_HOST: node-3
+      DISCOVERY_INTERVAL: '10'
+      STORAGE_DIR: /app/storage
+    volumes:
+    - ./storage/node-3:/app/storage
+    networks:
+    - p2p-net
+    depends_on:
+    - bootstrap
+    restart: unless-stopped
+  node-4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-4
+    ports:
+    - 5004:5000
+    environment:
+      NODE_ID: node-4
+      NODE_PORT: '5000'
+      BOOTSTRAP_URL: http://bootstrap:5000
+      NODE_HOST: node-4
+      DISCOVERY_INTERVAL: '10'
+      STORAGE_DIR: /app/storage
+    volumes:
+    - ./storage/node-4:/app/storage
+    networks:
+    - p2p-net
+    depends_on:
+    - bootstrap
+    restart: unless-stopped
+  node-5:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-5
+    ports:
+    - 5005:5000
+    environment:
+      NODE_ID: node-5
+      NODE_PORT: '5000'
+      BOOTSTRAP_URL: http://bootstrap:5000
+      NODE_HOST: node-5
+      DISCOVERY_INTERVAL: '10'
+      STORAGE_DIR: /app/storage
+    volumes:
+    - ./storage/node-5:/app/storage
+    networks:
+    - p2p-net
+    depends_on:
+    - bootstrap
+    restart: unless-stopped
+networks:
+  p2p-net:
+    driver: bridge

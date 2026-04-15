@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Network Dashboard — CECS 327 Project 4</title>
+    <!-- Chart.js for traffic visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- D3.js for network graph -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1923;
+            color: #e0e6ed;
+            min-height: 100vh;
+        }
+        header {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0d1b2a 100%);
+            padding: 20px 30px;
+            border-bottom: 2px solid #2a4a6a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 22px; color: #4fc3f7; }
+        header .status { font-size: 14px; color: #81c784; }
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 15px 30px;
+            background: #132030;
+            border-bottom: 1px solid #1e3a5a;
+        }
+        .stat-card {
+            background: #1a2d40;
+            border: 1px solid #2a4a6a;
+            border-radius: 8px;
+            padding: 15px 20px;
+            flex: 1;
+            text-align: center;
+        }
+        .stat-card .label { font-size: 12px; color: #78909c; text-transform: uppercase; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #4fc3f7; margin-top: 5px; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px 30px;
+        }
+        .panel {
+            background: #132030;
+            border: 1px solid #1e3a5a;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .panel h2 {
+            font-size: 16px;
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1e3a5a;
+        }
+        #network-graph { width: 100%; height: 400px; }
+        #traffic-chart { width: 100%; height: 300px; }
+        .peer-list { max-height: 350px; overflow-y: auto; }
+        .peer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            background: #1a2d40;
+            border-radius: 6px;
+            border-left: 3px solid #4fc3f7;
+        }
+        .peer-item.dead { border-left-color: #ef5350; opacity: 0.6; }
+        .peer-item .name { font-weight: bold; font-size: 14px; }
+        .peer-item .details { font-size: 12px; color: #78909c; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .badge.alive { background: #1b5e20; color: #81c784; }
+        .badge.dead { background: #b71c1c; color: #ef9a9a; }
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .metrics-table th {
+            text-align: left;
+            padding: 8px;
+            color: #78909c;
+            border-bottom: 1px solid #1e3a5a;
+        }
+        .metrics-table td {
+            padding: 8px;
+            border-bottom: 1px solid #0f1923;
+        }
+        .metrics-table tr:hover { background: #1a2d40; }
+        .event-tag {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .event-tag.upload { background: #1b5e20; color: #a5d6a7; }
+        .event-tag.download { background: #0d47a1; color: #90caf9; }
+        .event-tag.kv { background: #e65100; color: #ffcc80; }
+        .event-tag.forward { background: #4a148c; color: #ce93d8; }
+        .event-tag.register { background: #006064; color: #80deea; }
+        svg text { fill: #e0e6ed; font-size: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌐 P2P Network Dashboard — CECS 327 Project 4</h1>
+        <div class="status" id="update-status">Connecting...</div>
+    </header>
+
+    <!-- Summary Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="label">Active Peers</div>
+            <div class="value" id="stat-peers">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Total Files</div>
+            <div class="value" id="stat-files">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">KV Entries</div>
+            <div class="value" id="stat-kv">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Total Events</div>
+            <div class="value" id="stat-events">0</div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid">
+        <!-- Network Graph (D3.js) -->
+        <div class="panel">
+            <h2>🔗 Network Graph</h2>
+            <div id="network-graph"></div>
+        </div>
+
+        <!-- Active Peers List -->
+        <div class="panel">
+            <h2>📡 Active Peers</h2>
+            <div class="peer-list" id="peer-list"></div>
+        </div>
+
+        <!-- Message Traffic Over Time (Chart.js) -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>📊 Message Traffic Over Time</h2>
+            <canvas id="traffic-chart"></canvas>
+        </div>
+
+        <!-- Recent Events Log -->
+        <div class="panel" style="grid-column: span 2;">
+            <h2>📋 Recent Events</h2>
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Event</th>
+                            <th>Source</th>
+                            <th>Target</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // =====================================================================
+    // Dashboard JavaScript — polls /api/state and updates all panels
+    // =====================================================================
+
+    const POLL_MS = 3000;  // Poll every 3 seconds
+    let trafficChart = null;
+
+    // ----- Initialize Chart.js line chart for traffic -----
+    function initTrafficChart() {
+        const ctx = document.getElementById('traffic-chart').getContext('2d');
+        trafficChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Total Events',
+                        data: [],
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(79, 195, 247, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                    {
+                        label: 'Active Peers',
+                        data: [],
+                        borderColor: '#81c784',
+                        backgroundColor: 'rgba(129, 199, 132, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                animation: { duration: 300 },
+                scales: {
+                    x: {
+                        ticks: { color: '#78909c', maxTicksLimit: 15 },
+                        grid: { color: '#1e3a5a' },
+                    },
+                    y: {
+                        ticks: { color: '#78909c' },
+                        grid: { color: '#1e3a5a' },
+                        beginAtZero: true,
+                    },
+                },
+                plugins: {
+                    legend: { labels: { color: '#e0e6ed' } },
+                },
+            },
+        });
+    }
+
+    // ----- D3.js Force-Directed Network Graph -----
+    let simulation = null;
+    let svgGroup = null;
+
+    function initNetworkGraph() {
+        const container = document.getElementById('network-graph');
+        const width = container.clientWidth;
+        const height = 400;
+
+        const svg = d3.select('#network-graph')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        svgGroup = svg.append('g');
+
+        // Add zoom behavior
+        svg.call(d3.zoom().on('zoom', (event) => {
+            svgGroup.attr('transform', event.transform);
+        }));
+
+        simulation = d3.forceSimulation()
+            .force('link', d3.forceLink().id(d => d.id).distance(80))
+            .force('charge', d3.forceManyBody().strength(-200))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide(30));
+    }
+
+    function updateNetworkGraph(peers, connections) {
+        if (!svgGroup) return;
+
+        // Build nodes array from peers
+        const nodes = Object.entries(peers).map(([id, info]) => ({
+            id: id,
+            alive: info.alive,
+            files: info.files_count || 0,
+            kv: info.kv_count || 0,
+        }));
+
+        // Build links from connections (deduplicate)
+        const linkSet = new Set();
+        const links = [];
+        for (const c of connections) {
+            const key = [c.source, c.target].sort().join('-');
+            if (!linkSet.has(key)) {
+                linkSet.add(key);
+                links.push({ source: c.source, target: c.target });
+            }
+        }
+
+        // Update links
+        const link = svgGroup.selectAll('.link')
+            .data(links, d => d.source + '-' + d.target);
+        link.exit().remove();
+        link.enter().append('line')
+            .attr('class', 'link')
+            .attr('stroke', '#2a4a6a')
+            .attr('stroke-width', 1.5)
+            .attr('stroke-opacity', 0.6);
+
+        // Update nodes
+        const node = svgGroup.selectAll('.node')
+            .data(nodes, d => d.id);
+        node.exit().remove();
+        const nodeEnter = node.enter().append('g')
+            .attr('class', 'node')
+            .call(d3.drag()
+                .on('start', dragStart)
+                .on('drag', dragging)
+                .on('end', dragEnd));
+
+        nodeEnter.append('circle')
+            .attr('r', 12)
+            .attr('stroke', '#4fc3f7')
+            .attr('stroke-width', 2);
+
+        nodeEnter.append('text')
+            .attr('dy', -18)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '9px');
+
+        // Update existing + new
+        const allNodes = svgGroup.selectAll('.node');
+        allNodes.select('circle')
+            .attr('fill', d => d.alive ? '#1a4a6a' : '#5a1a1a');
+        allNodes.select('text')
+            .text(d => d.id.substring(0, 8));
+
+        // Restart simulation
+        simulation.nodes(nodes).on('tick', () => {
+            svgGroup.selectAll('.link')
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+            svgGroup.selectAll('.node')
+                .attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+        simulation.force('link').links(links);
+        simulation.alpha(0.3).restart();
+    }
+
+    function dragStart(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x; d.fy = d.y;
+    }
+    function dragging(event, d) { d.fx = event.x; d.fy = event.y; }
+    function dragEnd(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null; d.fy = null;
+    }
+
+    // ----- Update Peer List Panel -----
+    function updatePeerList(peers) {
+        const container = document.getElementById('peer-list');
+        let html = '';
+        for (const [id, info] of Object.entries(peers)) {
+            const alive = info.alive;
+            const reqCount = info.request_count || {};
+            const totalReqs = Object.values(reqCount).reduce((a, b) => a + b, 0);
+            html += `
+                <div class="peer-item ${alive ? '' : 'dead'}">
+                    <div>
+                        <div class="name">${id}</div>
+                        <div class="details">
+                            Files: ${info.files_count || 0} | KV: ${info.kv_count || 0} | Requests: ${totalReqs}
+                        </div>
+                    </div>
+                    <span class="badge ${alive ? 'alive' : 'dead'}">${alive ? 'ALIVE' : 'DOWN'}</span>
+                </div>
+            `;
+        }
+        container.innerHTML = html || '<div style="color:#78909c; text-align:center; padding:20px;">No peers detected yet...</div>';
+    }
+
+    // ----- Update Traffic Chart -----
+    function updateTrafficChart(traffic) {
+        if (!trafficChart) return;
+
+        const labels = traffic.map(t => {
+            const d = new Date(t.timestamp * 1000);
+            return d.toLocaleTimeString();
+        });
+        const events = traffic.map(t => t.total_events);
+        const activePeers = traffic.map(t => t.active_peers);
+
+        trafficChart.data.labels = labels;
+        trafficChart.data.datasets[0].data = events;
+        trafficChart.data.datasets[1].data = activePeers;
+        trafficChart.update('none');
+    }
+
+    // ----- Update Events Table -----
+    function updateEventsTable(metrics) {
+        const tbody = document.getElementById('events-table');
+        // Show last 50 events, newest first
+        const recent = metrics.slice(-50).reverse();
+        let html = '';
+        for (const m of recent) {
+            const time = new Date(m.timestamp * 1000).toLocaleTimeString();
+            const eventClass = getEventClass(m.event);
+            const details = m.details ? JSON.stringify(m.details).substring(0, 60) : '';
+            html += `
+                <tr>
+                    <td>${time}</td>
+                    <td><span class="event-tag ${eventClass}">${m.event}</span></td>
+                    <td>${m.source || '-'}</td>
+                    <td>${m.target || '-'}</td>
+                    <td style="color:#78909c; font-size:12px;">${details}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; color:#78909c;">No events yet...</td></tr>';
+    }
+
+    function getEventClass(event) {
+        if (event.includes('upload')) return 'upload';
+        if (event.includes('download')) return 'download';
+        if (event.includes('kv')) return 'kv';
+        if (event.includes('forward') || event.includes('redirect')) return 'forward';
+        if (event.includes('register')) return 'register';
+        return '';
+    }
+
+    // ----- Update Summary Stats -----
+    function updateStats(state) {
+        const peers = state.peers || {};
+        const peerCount = Object.values(peers).filter(p => p.alive).length;
+        const totalFiles = Object.values(peers).reduce((s, p) => s + (p.files_count || 0), 0);
+        const totalKV = Object.values(peers).reduce((s, p) => s + (p.kv_count || 0), 0);
+        const totalEvents = (state.metrics || []).length;
+
+        document.getElementById('stat-peers').textContent = peerCount;
+        document.getElementById('stat-files').textContent = totalFiles;
+        document.getElementById('stat-kv').textContent = totalKV;
+        document.getElementById('stat-events').textContent = totalEvents;
+    }
+
+    // ----- Main Poll Loop -----
+    async function pollState() {
+        try {
+            const resp = await fetch('/api/state');
+            const state = await resp.json();
+
+            updateStats(state);
+            updatePeerList(state.peers || {});
+            updateTrafficChart(state.traffic || []);
+            updateNetworkGraph(state.peers || {}, state.connections || []);
+            updateEventsTable(state.metrics || []);
+
+            const ts = new Date(state.last_update * 1000).toLocaleTimeString();
+            document.getElementById('update-status').textContent = `✅ Live — Last update: ${ts}`;
+        } catch (err) {
+            document.getElementById('update-status').textContent = '⚠️ Connection error';
+            console.error('Poll error:', err);
+        }
+    }
+
+    // ----- Init -----
+    initTrafficChart();
+    initNetworkGraph();
+    pollState();
+    setInterval(pollState, POLL_MS);
+    </script>
+</body>
+</html>
