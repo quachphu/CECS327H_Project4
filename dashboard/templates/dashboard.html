@@ -4,233 +4,224 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>P2P Network Dashboard — CECS 327 Project 4</title>
-    <!-- Chart.js for traffic visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- D3.js for network graph -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: #0f1923;
-        color: #e0e6ed;
-        min-height: 100vh;
+        margin: 0;
+        font-family: monospace;
+        background: #111;
+        color: #ccc;
       }
       header {
-        background: linear-gradient(135deg, #1a2a3a 0%, #0d1b2a 100%);
-        padding: 20px 30px;
-        border-bottom: 2px solid #2a4a6a;
+        background: #1a1a2e;
+        padding: 14px 24px;
+        border-bottom: 1px solid #333;
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
       header h1 {
-        font-size: 22px;
+        font-size: 16px;
         color: #4fc3f7;
+        margin: 0;
       }
-      header .status {
-        font-size: 14px;
+      #update-status {
+        font-size: 12px;
         color: #81c784;
       }
-      .stats-bar {
+
+      .stats {
         display: flex;
-        gap: 20px;
-        padding: 15px 30px;
-        background: #132030;
-        border-bottom: 1px solid #1e3a5a;
+        gap: 12px;
+        padding: 12px 24px;
+        background: #161616;
+        border-bottom: 1px solid #222;
       }
-      .stat-card {
-        background: #1a2d40;
-        border: 1px solid #2a4a6a;
-        border-radius: 8px;
-        padding: 15px 20px;
+      .stat {
         flex: 1;
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 12px;
         text-align: center;
       }
-      .stat-card .label {
-        font-size: 12px;
-        color: #78909c;
+      .stat .label {
+        font-size: 11px;
+        color: #666;
         text-transform: uppercase;
       }
-      .stat-card .value {
-        font-size: 28px;
+      .stat .value {
+        font-size: 26px;
         font-weight: bold;
         color: #4fc3f7;
-        margin-top: 5px;
       }
+
       .grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        padding: 20px 30px;
+        gap: 16px;
+        padding: 16px 24px;
       }
       .panel {
-        background: #132030;
-        border: 1px solid #1e3a5a;
-        border-radius: 10px;
-        padding: 20px;
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 16px;
       }
       .panel h2 {
-        font-size: 16px;
+        font-size: 13px;
         color: #4fc3f7;
-        margin-bottom: 15px;
+        margin: 0 0 12px;
         padding-bottom: 8px;
-        border-bottom: 1px solid #1e3a5a;
+        border-bottom: 1px solid #2a2a2a;
+        text-transform: uppercase;
       }
-      #network-graph {
-        width: 100%;
-        height: 400px;
-      }
-      #traffic-chart {
-        width: 100%;
-        height: 300px;
-      }
-      .peer-list {
-        max-height: 350px;
+
+      /* Peer list */
+      #peer-list {
+        max-height: 320px;
         overflow-y: auto;
       }
       .peer-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 12px;
-        margin-bottom: 6px;
-        background: #1a2d40;
-        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 5px;
+        background: #222;
+        border-radius: 5px;
         border-left: 3px solid #4fc3f7;
+        font-size: 13px;
       }
       .peer-item.dead {
-        border-left-color: #ef5350;
-        opacity: 0.6;
+        border-left-color: #e53935;
+        opacity: 0.55;
       }
-      .peer-item .name {
-        font-weight: bold;
-        font-size: 14px;
-      }
-      .peer-item .details {
-        font-size: 12px;
-        color: #78909c;
+      .peer-item .detail {
+        font-size: 11px;
+        color: #666;
+        margin-top: 2px;
       }
       .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: bold;
+        padding: 2px 7px;
+        border-radius: 3px;
       }
       .badge.alive {
-        background: #1b5e20;
+        background: #1b3a1b;
         color: #81c784;
       }
       .badge.dead {
-        background: #b71c1c;
-        color: #ef9a9a;
+        background: #3a1b1b;
+        color: #e57373;
       }
-      .metrics-table {
+
+      /* Events table */
+      .wide {
+        grid-column: span 2;
+      }
+      #events-wrap {
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 13px;
+        font-size: 12px;
       }
-      .metrics-table th {
+      th {
+        color: #555;
         text-align: left;
-        padding: 8px;
-        color: #78909c;
-        border-bottom: 1px solid #1e3a5a;
+        padding: 6px 8px;
+        border-bottom: 1px solid #2a2a2a;
       }
-      .metrics-table td {
-        padding: 8px;
-        border-bottom: 1px solid #0f1923;
+      td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #1a1a1a;
       }
-      .metrics-table tr:hover {
-        background: #1a2d40;
+      tr:hover td {
+        background: #222;
       }
-      .event-tag {
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 11px;
+      .tag {
+        font-size: 10px;
         font-weight: bold;
+        padding: 1px 5px;
+        border-radius: 3px;
       }
-      .event-tag.upload {
-        background: #1b5e20;
+      .tag.upload {
+        background: #1b3a1b;
         color: #a5d6a7;
       }
-      .event-tag.download {
-        background: #0d47a1;
+      .tag.download {
+        background: #0d2a5e;
         color: #90caf9;
       }
-      .event-tag.kv {
-        background: #e65100;
+      .tag.kv {
+        background: #3a1f00;
         color: #ffcc80;
       }
-      .event-tag.forward {
-        background: #4a148c;
+      .tag.forward {
+        background: #2a0050;
         color: #ce93d8;
       }
-      .event-tag.register {
-        background: #006064;
+      .tag.register {
+        background: #003333;
         color: #80deea;
-      }
-      svg text {
-        fill: #e0e6ed;
-        font-size: 10px;
       }
     </style>
   </head>
   <body>
     <header>
       <h1>P2P Network Dashboard — CECS 327 Project 4</h1>
-      <div class="status" id="update-status">Connecting...</div>
+      <span id="update-status">Connecting...</span>
     </header>
 
-    <!-- Summary Stats Bar -->
-    <div class="stats-bar">
-      <div class="stat-card">
+    <!-- Summary stats -->
+    <div class="stats">
+      <div class="stat">
         <div class="label">Active Peers</div>
-        <div class="value" id="stat-peers">0</div>
+        <div class="value" id="s-peers">0</div>
       </div>
-      <div class="stat-card">
+      <div class="stat">
         <div class="label">Total Files</div>
-        <div class="value" id="stat-files">0</div>
+        <div class="value" id="s-files">0</div>
       </div>
-      <div class="stat-card">
+      <div class="stat">
         <div class="label">KV Entries</div>
-        <div class="value" id="stat-kv">0</div>
+        <div class="value" id="s-kv">0</div>
       </div>
-      <div class="stat-card">
+      <div class="stat">
         <div class="label">Total Events</div>
-        <div class="value" id="stat-events">0</div>
+        <div class="value" id="s-events">0</div>
       </div>
     </div>
 
-    <!-- Main Grid -->
     <div class="grid">
       <!-- Network Graph (D3.js) -->
       <div class="panel">
         <h2>Network Graph</h2>
-        <div id="network-graph"></div>
+        <div id="graph" style="height: 320px"></div>
       </div>
 
-      <!-- Active Peers List -->
+      <!-- Active Peers -->
       <div class="panel">
         <h2>Active Peers</h2>
-        <div class="peer-list" id="peer-list"></div>
+        <div id="peer-list"></div>
       </div>
 
-      <!-- Message Traffic Over Time (Chart.js) -->
-      <div class="panel" style="grid-column: span 2">
+      <!-- Traffic chart (Chart.js) -->
+      <div class="panel wide">
         <h2>Message Traffic Over Time</h2>
-        <canvas id="traffic-chart"></canvas>
+        <canvas id="traffic" style="max-height: 200px"></canvas>
       </div>
 
-      <!-- Recent Events Log -->
-      <div class="panel" style="grid-column: span 2">
+      <!-- Events log -->
+      <div class="panel wide">
         <h2>Recent Events</h2>
-        <div style="max-height: 300px; overflow-y: auto">
-          <table class="metrics-table">
+        <div id="events-wrap">
+          <table>
             <thead>
               <tr>
                 <th>Time</th>
@@ -240,22 +231,19 @@
                 <th>Details</th>
               </tr>
             </thead>
-            <tbody id="events-table"></tbody>
+            <tbody id="events-body"></tbody>
           </table>
         </div>
       </div>
     </div>
 
     <script>
-      // Dashboard JavaScript — polls /api/state and updates all panels
+      const POLL_MS = 3000;
 
-      const POLL_MS = 3000; // Poll every 3 seconds
-      let trafficChart = null;
-
-      //Initialize Chart.js line chart for traffic
-      function initTrafficChart() {
-        const ctx = document.getElementById("traffic-chart").getContext("2d");
-        trafficChart = new Chart(ctx, {
+      // Chart.js traffic chart
+      const chart = new Chart(
+        document.getElementById("traffic").getContext("2d"),
+        {
           type: "line",
           data: {
             labels: [],
@@ -264,7 +252,7 @@
                 label: "Total Events",
                 data: [],
                 borderColor: "#4fc3f7",
-                backgroundColor: "rgba(79, 195, 247, 0.1)",
+                backgroundColor: "rgba(79,195,247,0.08)",
                 tension: 0.3,
                 fill: true,
               },
@@ -272,7 +260,7 @@
                 label: "Active Peers",
                 data: [],
                 borderColor: "#81c784",
-                backgroundColor: "rgba(129, 199, 132, 0.1)",
+                backgroundColor: "rgba(129,199,132,0.08)",
                 tension: 0.3,
                 fill: true,
               },
@@ -280,289 +268,231 @@
           },
           options: {
             responsive: true,
-            animation: { duration: 300 },
+            animation: false,
             scales: {
               x: {
-                ticks: { color: "#78909c", maxTicksLimit: 15 },
-                grid: { color: "#1e3a5a" },
+                ticks: { color: "#555", maxTicksLimit: 12 },
+                grid: { color: "#222" },
               },
               y: {
-                ticks: { color: "#78909c" },
-                grid: { color: "#1e3a5a" },
+                ticks: { color: "#555" },
+                grid: { color: "#222" },
                 beginAtZero: true,
               },
             },
             plugins: {
-              legend: { labels: { color: "#e0e6ed" } },
+              legend: {
+                labels: { color: "#888", font: { family: "monospace" } },
+              },
             },
           },
-        });
-      }
+        },
+      );
 
-      //  D3.js Force-Directed Network Graph, Resources : https://www.youtube.com/watch?v=C4t6qfHZ6Tw
-      let simulation = null;
-      let svgGroup = null;
+      // ── D3 force graph ───────────────────────────────────────────────
+      const container = document.getElementById("graph");
+      const W = container.clientWidth,
+        H = 320;
+      const svg = d3
+        .select("#graph")
+        .append("svg")
+        .attr("width", W)
+        .attr("height", H);
+      const g = svg.append("g");
+      svg.call(d3.zoom().on("zoom", (e) => g.attr("transform", e.transform)));
 
-      function initNetworkGraph() {
-        const container = document.getElementById("network-graph");
-        const width = container.clientWidth;
-        const height = 400;
+      const sim = d3
+        .forceSimulation()
+        .force(
+          "link",
+          d3
+            .forceLink()
+            .id((d) => d.id)
+            .distance(90),
+        )
+        .force("charge", d3.forceManyBody().strength(-180))
+        .force("center", d3.forceCenter(W / 2, H / 2))
+        .force("collision", d3.forceCollide(28));
 
-        const svg = d3
-          .select("#network-graph")
-          .append("svg")
-          .attr("width", width)
-          .attr("height", height);
-
-        svgGroup = svg.append("g");
-
-        // Add zoom behavior
-        svg.call(
-          d3.zoom().on("zoom", (event) => {
-            svgGroup.attr("transform", event.transform);
-          }),
-        );
-
-        simulation = d3
-          .forceSimulation()
-          .force(
-            "link",
-            d3
-              .forceLink()
-              .id((d) => d.id)
-              .distance(80),
-          )
-          .force("charge", d3.forceManyBody().strength(-200))
-          .force("center", d3.forceCenter(width / 2, height / 2))
-          .force("collision", d3.forceCollide(30));
-      }
-
-      function updateNetworkGraph(peers, connections) {
-        if (!svgGroup) return;
-
-        // Build nodes array from peers
+      function updateGraph(peers, connections) {
         const nodes = Object.entries(peers).map(([id, info]) => ({
-          id: id,
+          id,
           alive: info.alive,
-          files: info.files_count || 0,
-          kv: info.kv_count || 0,
         }));
 
-        // Build links from connections (deduplicate)
-        const linkSet = new Set();
-        const links = [];
-        for (const c of connections) {
-          const key = [c.source, c.target].sort().join("-");
-          if (!linkSet.has(key)) {
-            linkSet.add(key);
-            links.push({ source: c.source, target: c.target });
+        const seen = new Set();
+        const links = connections.reduce((acc, c) => {
+          const key = [c.source, c.target].sort().join("|");
+          if (!seen.has(key)) {
+            seen.add(key);
+            acc.push({ source: c.source, target: c.target });
           }
-        }
+          return acc;
+        }, []);
 
-        // Update links
-        const link = svgGroup
-          .selectAll(".link")
-          .data(links, (d) => d.source + "-" + d.target);
+        const link = g
+          .selectAll(".lnk")
+          .data(links, (d) => d.source + d.target);
         link.exit().remove();
         link
           .enter()
           .append("line")
-          .attr("class", "link")
-          .attr("stroke", "#2a4a6a")
-          .attr("stroke-width", 1.5)
-          .attr("stroke-opacity", 0.6);
+          .attr("class", "lnk")
+          .attr("stroke", "#333")
+          .attr("stroke-width", 1.5);
 
-        // Update nodes
-        const node = svgGroup.selectAll(".node").data(nodes, (d) => d.id);
+        const node = g.selectAll(".nd").data(nodes, (d) => d.id);
         node.exit().remove();
-        const nodeEnter = node
+        const ne = node
           .enter()
           .append("g")
-          .attr("class", "node")
+          .attr("class", "nd")
           .call(
             d3
               .drag()
-              .on("start", dragStart)
-              .on("drag", dragging)
-              .on("end", dragEnd),
+              .on("start", (e, d) => {
+                if (!e.active) sim.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+              })
+              .on("drag", (e, d) => {
+                d.fx = e.x;
+                d.fy = e.y;
+              })
+              .on("end", (e, d) => {
+                if (!e.active) sim.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+              }),
           );
-
-        nodeEnter
-          .append("circle")
-          .attr("r", 12)
+        ne.append("circle")
+          .attr("r", 13)
           .attr("stroke", "#4fc3f7")
           .attr("stroke-width", 2);
-
-        nodeEnter
-          .append("text")
+        ne.append("text")
           .attr("dy", -18)
           .attr("text-anchor", "middle")
-          .attr("font-size", "9px");
+          .attr("font-size", "9px")
+          .attr("fill", "#aaa");
 
-        // Update existing + new
-        const allNodes = svgGroup.selectAll(".node");
-        allNodes
-          .select("circle")
-          .attr("fill", (d) => (d.alive ? "#1a4a6a" : "#5a1a1a"));
-        allNodes.select("text").text((d) => d.id.substring(0, 8));
+        g.selectAll(".nd circle").attr("fill", (d) =>
+          d.alive ? "#1a3a5a" : "#5a1a1a",
+        );
+        g.selectAll(".nd text").text((d) => d.id);
 
-        // Restart simulation
-        simulation.nodes(nodes).on("tick", () => {
-          svgGroup
-            .selectAll(".link")
+        sim.nodes(nodes).on("tick", () => {
+          g.selectAll(".lnk")
             .attr("x1", (d) => d.source.x)
             .attr("y1", (d) => d.source.y)
             .attr("x2", (d) => d.target.x)
             .attr("y2", (d) => d.target.y);
-          svgGroup
-            .selectAll(".node")
-            .attr("transform", (d) => `translate(${d.x},${d.y})`);
+          g.selectAll(".nd").attr(
+            "transform",
+            (d) => `translate(${d.x},${d.y})`,
+          );
         });
-        simulation.force("link").links(links);
-        simulation.alpha(0.3).restart();
+        sim.force("link").links(links);
+        sim.alpha(0.3).restart();
       }
 
-      function dragStart(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-      }
-      function dragging(event, d) {
-        d.fx = event.x;
-        d.fy = event.y;
-      }
-      function dragEnd(event, d) {
-        if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
-      }
-
-      //  Update Peer List Panel
+      // Peer list
       function updatePeerList(peers) {
-        const container = document.getElementById("peer-list");
-        let html = "";
-        for (const [id, info] of Object.entries(peers)) {
-          const alive = info.alive;
-          const reqCount = info.request_count || {};
-          const totalReqs = Object.values(reqCount).reduce((a, b) => a + b, 0);
-          html += `
-                <div class="peer-item ${alive ? "" : "dead"}">
-                    <div>
-                        <div class="name">${id}</div>
-                        <div class="details">
-                            Files: ${info.files_count || 0} | KV: ${info.kv_count || 0} | Requests: ${totalReqs}
-                        </div>
-                    </div>
-                    <span class="badge ${alive ? "alive" : "dead"}">${alive ? "ALIVE" : "DOWN"}</span>
-                </div>
-            `;
-        }
-        container.innerHTML =
+        const el = document.getElementById("peer-list");
+        const html = Object.entries(peers)
+          .map(([id, info]) => {
+            const reqs = Object.values(info.request_count || {}).reduce(
+              (a, b) => a + b,
+              0,
+            );
+            return `<div class="peer-item ${info.alive ? "" : "dead"}">
+            <div>
+              <div>${id}</div>
+              <div class="detail">Files: ${info.files_count || 0} | KV: ${info.kv_count || 0} | Reqs: ${reqs}</div>
+            </div>
+            <span class="badge ${info.alive ? "alive" : "dead"}">${info.alive ? "ALIVE" : "DOWN"}</span>
+          </div>`;
+          })
+          .join("");
+        el.innerHTML =
           html ||
-          '<div style="color:#78909c; text-align:center; padding:20px;">No peers detected yet...</div>';
+          `<div style="color:#555;padding:16px;text-align:center;">No peers yet...</div>`;
       }
 
-      // Update Traffic Chart
-      function updateTrafficChart(traffic) {
-        if (!trafficChart) return;
-
-        const labels = traffic.map((t) => {
-          const d = new Date(t.timestamp * 1000);
-          return d.toLocaleTimeString();
-        });
-        const events = traffic.map((t) => t.total_events);
-        const activePeers = traffic.map((t) => t.active_peers);
-
-        trafficChart.data.labels = labels;
-        trafficChart.data.datasets[0].data = events;
-        trafficChart.data.datasets[1].data = activePeers;
-        trafficChart.update("none");
-      }
-
-      //  Update Events Table to update the dashboard
-      function updateEventsTable(metrics) {
-        const tbody = document.getElementById("events-table");
-        // Show last 50 events, newest first
-        const recent = metrics.slice(-50).reverse();
-        let html = "";
-        for (const m of recent) {
-          const time = new Date(m.timestamp * 1000).toLocaleTimeString();
-          const eventClass = getEventClass(m.event);
-          const details = m.details
-            ? JSON.stringify(m.details).substring(0, 60)
-            : "";
-          html += `
-                <tr>
-                    <td>${time}</td>
-                    <td><span class="event-tag ${eventClass}">${m.event}</span></td>
-                    <td>${m.source || "-"}</td>
-                    <td>${m.target || "-"}</td>
-                    <td style="color:#78909c; font-size:12px;">${details}</td>
-                </tr>
-            `;
-        }
-        tbody.innerHTML =
-          html ||
-          '<tr><td colspan="5" style="text-align:center; color:#78909c;">No events yet...</td></tr>';
-      }
-
-      function getEventClass(event) {
-        if (event.includes("upload")) return "upload";
-        if (event.includes("download")) return "download";
-        if (event.includes("kv")) return "kv";
-        if (event.includes("forward") || event.includes("redirect"))
+      // Events table
+      function tagClass(evt) {
+        if (evt.includes("upload")) return "upload";
+        if (evt.includes("download")) return "download";
+        if (evt.includes("kv")) return "kv";
+        if (evt.includes("forward") || evt.includes("redirect"))
           return "forward";
-        if (event.includes("register")) return "register";
+        if (evt.includes("register")) return "register";
         return "";
       }
 
-      // Update Summary Stats
-      function updateStats(state) {
-        const peers = state.peers || {};
-        const peerCount = Object.values(peers).filter((p) => p.alive).length;
-        const totalFiles = Object.values(peers).reduce(
-          (s, p) => s + (p.files_count || 0),
-          0,
-        );
-        const totalKV = Object.values(peers).reduce(
-          (s, p) => s + (p.kv_count || 0),
-          0,
-        );
-        const totalEvents = (state.metrics || []).length;
-
-        document.getElementById("stat-peers").textContent = peerCount;
-        document.getElementById("stat-files").textContent = totalFiles;
-        document.getElementById("stat-kv").textContent = totalKV;
-        document.getElementById("stat-events").textContent = totalEvents;
+      function updateEvents(metrics) {
+        const rows = metrics
+          .slice(-50)
+          .reverse()
+          .map((m) => {
+            const t = new Date(m.timestamp * 1000).toLocaleTimeString();
+            const d = m.details ? JSON.stringify(m.details).slice(0, 55) : "";
+            return `<tr>
+            <td>${t}</td>
+            <td><span class="tag ${tagClass(m.event)}">${m.event}</span></td>
+            <td>${m.source || "-"}</td>
+            <td>${m.target || "-"}</td>
+            <td style="color:#555;">${d}</td>
+          </tr>`;
+          })
+          .join("");
+        document.getElementById("events-body").innerHTML =
+          rows ||
+          `<tr><td colspan="5" style="color:#555;text-align:center;">No events yet...</td></tr>`;
       }
 
-      //  Main Poll Loop
-      async function pollState() {
+      // Poll
+      async function poll() {
         try {
-          const resp = await fetch("/api/state");
-          const state = await resp.json();
+          const state = await fetch("/api/state").then((r) => r.json());
+          const peers = state.peers || {};
 
-          updateStats(state);
-          updatePeerList(state.peers || {});
-          updateTrafficChart(state.traffic || []);
-          updateNetworkGraph(state.peers || {}, state.connections || []);
-          updateEventsTable(state.metrics || []);
+          // Stats
+          document.getElementById("s-peers").textContent = Object.values(
+            peers,
+          ).filter((p) => p.alive).length;
+          document.getElementById("s-files").textContent = Object.values(
+            peers,
+          ).reduce((s, p) => s + (p.files_count || 0), 0);
+          document.getElementById("s-kv").textContent = Object.values(
+            peers,
+          ).reduce((s, p) => s + (p.kv_count || 0), 0);
+          document.getElementById("s-events").textContent = (
+            state.metrics || []
+          ).length;
+
+          updatePeerList(peers);
+          updateGraph(peers, state.connections || []);
+          updateEvents(state.metrics || []);
+
+          // Traffic chart
+          const traffic = state.traffic || [];
+          chart.data.labels = traffic.map((t) =>
+            new Date(t.timestamp * 1000).toLocaleTimeString(),
+          );
+          chart.data.datasets[0].data = traffic.map((t) => t.total_events);
+          chart.data.datasets[1].data = traffic.map((t) => t.active_peers);
+          chart.update("none");
 
           const ts = new Date(state.last_update * 1000).toLocaleTimeString();
-          document.getElementById("update-status").textContent =
-            `Live — Last update: ${ts}`;
-        } catch (err) {
+          document.getElementById("update-status").textContent = `Live — ${ts}`;
+        } catch {
           document.getElementById("update-status").textContent =
             "Connection error";
-          console.error("Poll error:", err);
         }
       }
 
-      //  Initialize the charts and the network graph
-      initTrafficChart();
-      initNetworkGraph();
-      pollState();
-      setInterval(pollState, POLL_MS);
+      poll();
+      setInterval(poll, POLL_MS);
     </script>
   </body>
 </html>
