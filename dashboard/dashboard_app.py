@@ -1,16 +1,11 @@
 """
 Dashboard Node — Option 2: Visualization & Monitoring
-=======================================================
-CECS 327 Project 4
+Provides a web-based dashboard using Flask + Chart.js + D3.js that shows active peers ,network graph 
+message traffic over time and per-node metrics 
+Resources : 
+1. https://www.youtube.com/watch?v=Z1RJmh_OqeA   
+2. https://www.youtube.com/watch?v=mQ945KwuPjU 
 
-Provides a web-based dashboard using Flask + Chart.js + D3.js that shows:
-  - Active peers (real-time count and list)
-  - Network graph (nodes and connections visualized with D3.js force layout)
-  - Message traffic over time (Chart.js line chart)
-  - Per-node metrics (files, KV entries, request counts)
-
-The dashboard polls the bootstrap's /metrics endpoint and each node's
-/status endpoint to build a live picture of the network.
 """
 
 import os
@@ -21,7 +16,7 @@ import requests as http_requests
 from flask import Flask, render_template, jsonify
 from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__) # Resources : https://www.youtube.com/watch?v=Z1RJmh_OqeA  
 CORS(app)
 
 BOOTSTRAP_URL = os.environ.get("BOOTSTRAP_URL", "http://bootstrap:5000")
@@ -34,26 +29,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger("dashboard")
 
-# ---------------------------------------------------------------------------
-# Cached Network State (updated by background poller)
-# ---------------------------------------------------------------------------
 network_state = {
-    "peers": {},        # node_id -> { url, status, files, kv_count, ... }
-    "connections": [],  # list of { source, target } edges
-    "traffic": [],      # time-series: { timestamp, event_count, ... }
-    "metrics": [],      # raw metric events from bootstrap
+    "peers": {},        
+    "connections": [],  
+    "traffic": [],      
+    "metrics": [],      
     "last_update": 0,
 }
 state_lock = threading.Lock()
 
 
 def poll_network():
-    """
-    Background thread that periodically polls bootstrap and each node
-    to build a current snapshot of the network for the dashboard.
-    """
-    last_metric_ts = 0  # Track last fetched metric timestamp
-
+    last_metric_ts = 0  
     while True:
         try:
             # 1. Fetch peer list from bootstrap
@@ -140,10 +127,7 @@ def poll_network():
         time.sleep(POLL_INTERVAL)
 
 
-# ---------------------------------------------------------------------------
 # Dashboard Routes
-# ---------------------------------------------------------------------------
-
 @app.route("/")
 def dashboard():
     """Serve the main dashboard HTML page."""
@@ -171,13 +155,9 @@ def api_traffic():
         return jsonify(network_state["traffic"])
 
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
-
 if __name__ == "__main__":
     logger.info("Starting dashboard poller...")
-
     # Launch background polling thread
     poller = threading.Thread(target=poll_network, daemon=True)
     poller.start()

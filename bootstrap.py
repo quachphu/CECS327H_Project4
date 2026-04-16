@@ -1,9 +1,14 @@
 """
-Bootstrap Node for P2P Network (Project 4)
-============================================
-Central registry for initial peer discovery.
-Peers register here on startup, then communicate directly.
-Also exposes /metrics for the monitoring dashboard.
+Resources :
+1. https://www.geeksforgeeks.org/system-design/peer-to-peer-p2p-architecture/
+2. https://docs.docker.com/reference/samples/flask
+2. https://flask.palletsprojects.com/en/stable/quickstart/ 
+3. https://p2pnetsuite.github.io/P2PNet/misc/bootstrapserver.html
+4. https://www.youtube.com/watch?v=Rvfs6Xx3Kww
+5. Professor Lecture and assignments from CECS 327H
+6. https://docs.docker.com/compose/how-tos/networking/ 
+7. https://docs.docker.com/guides/python/containerize/
+8. https://www.youtube.com/watch?v=mQ945KwuPjU 
 """
 
 import time
@@ -11,16 +16,13 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)  # Allow dashboard cross-origin requests
+app = Flask(__name__) # Resources : https://www.youtube.com/watch?v=Z1RJmh_OqeA  
+CORS(app)  # I used this : https://www.youtube.com/watch?v=mQ945KwuPjU 
 
-# ---------------------------------------------------------------------------
+
 # Data Stores
-# ---------------------------------------------------------------------------
-# Registered peers: { node_id: { "url": ..., "registered_at": ... } }
 registered_peers = {}
-# Metrics log: list of { timestamp, event, source, target, details }
-metrics_log = []
+metrics_log = [] 
 MAX_METRICS = 5000  # Cap to prevent memory bloat
 
 logging.basicConfig(
@@ -31,9 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger("bootstrap")
 
 
-# ---------------------------------------------------------------------------
 # Helper: record a metric event
-# ---------------------------------------------------------------------------
 def record_metric(event, source="bootstrap", target=None, details=None):
     """Append a timestamped metric event to the log."""
     entry = {
@@ -49,10 +49,7 @@ def record_metric(event, source="bootstrap", target=None, details=None):
         metrics_log.pop(0)
 
 
-# ---------------------------------------------------------------------------
 # Peer Registration Endpoints
-# ---------------------------------------------------------------------------
-
 @app.route("/", methods=["GET"])
 def index():
     """Health check endpoint."""
@@ -109,10 +106,7 @@ def get_peers_detailed():
     return jsonify({"peers": registered_peers})
 
 
-# ---------------------------------------------------------------------------
-# Metrics Endpoints (for Option 2: Visualization & Monitoring)
-# ---------------------------------------------------------------------------
-
+# Metrics Endpoints (We chose Option 2: Visualization & Monitoring)
 @app.route("/metrics", methods=["GET"])
 def get_metrics():
     """Return all collected metrics for the dashboard."""
@@ -141,8 +135,6 @@ def report_metric():
     return jsonify({"status": "recorded"})
 
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

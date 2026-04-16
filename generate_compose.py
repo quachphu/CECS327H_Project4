@@ -1,7 +1,7 @@
 """
-Generate docker-compose.yml with bootstrap, dashboard, and N peer nodes.
-Run:  python generate_compose.py [num_nodes]
-Default: 5 nodes (adjust as needed for testing/demo)
+Resources : 
+1. https://codezup.com/flask-app-deployment-on-docker-compose/
+2. https://betterstack.com/community/guides/scaling-docker/docker-compose-getting-started/ 
 """
 
 import sys
@@ -19,9 +19,7 @@ compose = {
     },
 }
 
-# ---------------------------------------------------------------------------
-# Bootstrap Node — central peer registry + metrics collector
-# ---------------------------------------------------------------------------
+# Bootstrap Node 
 compose["services"]["bootstrap"] = {
     "build": {
         "context": ".",
@@ -33,9 +31,7 @@ compose["services"]["bootstrap"] = {
     "restart": "unless-stopped",
 }
 
-# ---------------------------------------------------------------------------
 # Dashboard Node — Option 2: Visualization & Monitoring
-# ---------------------------------------------------------------------------
 compose["services"]["dashboard"] = {
     "build": {
         "context": ".",
@@ -52,12 +48,10 @@ compose["services"]["dashboard"] = {
     "restart": "unless-stopped",
 }
 
-# ---------------------------------------------------------------------------
-# Peer Nodes — each runs the full P2P node with file/KV/DHT support
-# ---------------------------------------------------------------------------
+# Peer Nodes 
 for i in range(1, NUM_NODES + 1):
     node_name = f"node-{i}"
-    host_port = 5000 + i  # node-1 on 5001, node-2 on 5002, etc.
+    host_port = 5000 + i  
 
     compose["services"][node_name] = {
         "build": {
@@ -82,9 +76,7 @@ for i in range(1, NUM_NODES + 1):
         "restart": "unless-stopped",
     }
 
-# ---------------------------------------------------------------------------
 # Write docker-compose.yml
-# ---------------------------------------------------------------------------
 with open("docker-compose.yml", "w") as f:
     yaml.dump(compose, f, default_flow_style=False, sort_keys=False)
 
