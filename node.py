@@ -373,11 +373,13 @@ def discover_peers_from_peers():
 
 
 def periodic_discovery():
-    # Initial registration with bootstrap
-    register_with_bootstrap()
-    time.sleep(2)
+    # Initial registration with bootstrap (retry until it succeeds)
+    for _ in range(5):
+        register_with_bootstrap()
+        time.sleep(2)
 
     while True:
+        register_with_bootstrap()  # Re-register every cycle in case bootstrap restarted
         discover_peers_from_bootstrap()
         discover_peers_from_peers()
         time.sleep(DISCOVERY_INTERVAL)
