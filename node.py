@@ -18,7 +18,7 @@ import json
 import hashlib
 import logging
 import threading
-import requests as http_requests  # renamed to avoid collision with Flask's request
+import requests as http_requests 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -39,7 +39,7 @@ CORS(app)
 # Create local storage directory for file uploads (Phase 1)
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
-# Peer storage: set of peer URLs (excluding self)
+# Peer storage: set of peer URLs 
 peers = set()
 
 # Message log for tracking communication
@@ -78,7 +78,7 @@ def hash_key_to_node(key):
     key_hash = sha1_hash(key)
     ring = get_sorted_node_list()
 
-    # Find the first node with hash >= key_hash (clockwise on the ring)
+    # Find the first node with hash >= key_hash 
     for node_hash, node_url in ring:
         if node_hash >= key_hash:
             return node_url
@@ -87,8 +87,7 @@ def hash_key_to_node(key):
     return ring[0][1] if ring else NODE_URL
 
 
-# Metrics Helper (We chose Option 2: Visualization & Monitoring)
-
+# Metrics Helper 
 def report_metric(event, target=None, details=None):
     try:
         http_requests.post(
@@ -117,7 +116,7 @@ def upload_file():
 
     filename = secure_filename(file.filename)
 
-    # Phase 3: Check DHT routing — which node should store this file?
+    # Phase 3: Check DHT routing 
     responsible = hash_key_to_node(f"file:{filename}")
     if responsible != NODE_URL:
         # Forward the upload to the responsible node
@@ -135,7 +134,7 @@ def upload_file():
         except Exception as e:
             return jsonify({"error": f"Forwarding failed: {str(e)}"}), 502
 
-    # This node is responsible — save the file locally
+    # This node is responsible save the file locally
     filepath = os.path.join(STORAGE_DIR, filename)
     file.save(filepath)
     request_count["upload"] += 1
@@ -158,7 +157,7 @@ def download_file(filename):
         report_metric("file_download", details={"filename": filename})
         return send_from_directory(STORAGE_DIR, secure_filename(filename))
 
-    # Phase 3: Check DHT — redirect to responsible node
+    # Phase 3: Check DHT 
     responsible = hash_key_to_node(f"file:{filename}")
     if responsible != NODE_URL:
         logger.info(f"Redirecting download '{filename}' to: {responsible}")
@@ -183,7 +182,6 @@ def list_files():
 
 
 # Phase 2: Key-Value Store
-
 @app.route("/kv", methods=["POST"])
 def kv_put():
     data = request.get_json()
@@ -193,7 +191,7 @@ def kv_put():
     key = data["key"]
     value = data["value"]
 
-    # Phase 3: Check DHT routing — which node is responsible for this key?
+    # Phase 3: Check DHT routing 
     responsible = hash_key_to_node(key)
     if responsible != NODE_URL:
         # Forward the request to the responsible node
@@ -248,7 +246,7 @@ def kv_get(key):
 
 @app.route("/kv", methods=["GET"])
 def kv_list():
-    """List all key-value pairs stored on this node."""
+    # List all key-value pairs stored on this node.
     return jsonify({
         "node_id": NODE_ID,
         "store": kv_store,
@@ -310,7 +308,7 @@ def get_messages():
     return jsonify({"messages": message_log})
 
 
-# Node Status for Dashboard (Option 2)
+# Node Status for Dashboard 
 @app.route("/status", methods=["GET"])
 def node_status():
     return jsonify({

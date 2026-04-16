@@ -35,7 +35,7 @@ logger = logging.getLogger("bootstrap")
 
 # Helper: record a metric event
 def record_metric(event, source="bootstrap", target=None, details=None):
-    """Append a timestamped metric event to the log."""
+    # Append a timestamped metric event to the log.
     entry = {
         "timestamp": time.time(),
         "event": event,
@@ -52,7 +52,7 @@ def record_metric(event, source="bootstrap", target=None, details=None):
 # Peer Registration Endpoints
 @app.route("/", methods=["GET"])
 def index():
-    """Health check endpoint."""
+    # Health check endpoint.
     return jsonify({
         "message": "Bootstrap node is running!",
         "registered_peers": len(registered_peers),
@@ -61,7 +61,7 @@ def index():
 
 @app.route("/register", methods=["POST"])
 def register_peer():
-    """Register a new peer node with the bootstrap."""
+    # Register a new peer node with the bootstrap.
     data = request.get_json()
     if not data or "node_id" not in data or "url" not in data:
         return jsonify({"error": "Missing node_id or url"}), 400
@@ -80,8 +80,7 @@ def register_peer():
 
 @app.route("/unregister", methods=["POST"])
 def unregister_peer():
-    """Remove a peer from the registry."""
-    data = request.get_json()
+    data = request.get_json() # Remove a peer from the registry. 
     if not data or "node_id" not in data:
         return jsonify({"error": "Missing node_id"}), 400
 
@@ -109,7 +108,7 @@ def get_peers_detailed():
 # Metrics Endpoints (We chose Option 2: Visualization & Monitoring)
 @app.route("/metrics", methods=["GET"])
 def get_metrics():
-    """Return all collected metrics for the dashboard."""
+    # Return all collected metrics for the dashboard.
     since = request.args.get("since", 0, type=float)
     filtered = [m for m in metrics_log if m["timestamp"] > since]
     return jsonify({
@@ -121,7 +120,7 @@ def get_metrics():
 
 @app.route("/metrics/report", methods=["POST"])
 def report_metric():
-    """Accept metric reports from peer nodes."""
+    # Accept metric reports from peer nodes.
     data = request.get_json()
     if not data or "event" not in data:
         return jsonify({"error": "Missing event"}), 400
